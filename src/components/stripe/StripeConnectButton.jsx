@@ -38,7 +38,7 @@ export default function StripeConnectButton({ onConnect }) {
   const checkAccountStatus = async () => {
     try {
       setLoading(true);
-      const { data } = await axios.get('http://localhost:5000/api/stripe/account/status', {
+      const { data } = await axios.get('https://agri-backend.vercel.app/api/stripe/account/status', {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       
@@ -65,7 +65,7 @@ export default function StripeConnectButton({ onConnect }) {
         throw new Error('No authentication token found');
       }
       
-      const endpoint = 'http://localhost:5000/api/stripe/connect';
+      const endpoint = 'https://agri-backend.vercel.app/api/stripe/connect';
       console.log(`Making request to ${endpoint}...`);
       const response = await axios({
         method: 'get',

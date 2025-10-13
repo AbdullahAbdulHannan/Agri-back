@@ -40,7 +40,7 @@ const App = () => {
                   <Route path="/profile" element={<Profile />} />
 <Route path="/my-orders" element={<MyOrders />} />
                   <Route path="/cart" element={<Cart />} />
-                  <Route path="/users/verify-email" element={<VerifyEmail />} />
+                  <Route path="/verify-email" element={<VerifyEmail />} />
                 </Routes>
               </main>
               <Footer />

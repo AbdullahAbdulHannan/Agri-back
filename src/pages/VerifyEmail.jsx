@@ -20,7 +20,7 @@ const VerifyEmail = () => {
     const verify = async () => {
       try {
         // Backend route expects path param: /users/verify-email/:token
-        const res = await apiCall(`/users/verify-email/${token}`, { method: 'GET' });
+        const res = await apiCall(`/auth/verify-email/${token}`, { method: 'GET' });
         setStatus('success');
         setMessage(res?.message || 'Email verified successfully! Redirecting to sign in...');
         setTimeout(() => navigate('/signin'), 2000);

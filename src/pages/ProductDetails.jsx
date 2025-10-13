@@ -1,0 +1,399 @@
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import {
+  Box,
+  Container,
+  Typography,
+  Grid,
+  Button,
+  Chip,
+  Card,
+  CardContent,
+  Avatar,
+  Rating,
+  useTheme,
+  useMediaQuery,
+  CircularProgress,
+  TextField,
+  Alert
+} from '@mui/material';
+import {
+  ExpandMore as ExpandMoreIcon,
+  Favorite as FavoriteIcon,
+  ArrowBack as ArrowBackIcon
+} from '@mui/icons-material';
+import { productService } from '../services/productService';
+import AddToCartButton from '../components/AddToCartButton';
+import { useAuth } from '../context';
+
+const ProductDetails = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  
+  const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [quantity, setQuantity] = useState(1);
+  const [packaging, setPackaging] = useState('Normal');
+  const [expanded, setExpanded] = useState(false);
+  const { isAuthenticated, userRole } = useAuth();
+  
+  // Review related state
+  const [reviews, setReviews] = useState([]);
+  const [reviewForm, setReviewForm] = useState({
+    rating: 5,
+    title: '',
+    comment: ''
+  });
+  const [reviewError, setReviewError] = useState('');
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+
+  // Fetch product details
+  const fetchProductDetails = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await productService.getProductById(id);
+      setProduct(data);
+    } catch (err) {
+      console.error('Error fetching product details:', err);
+      setError('Failed to load product details');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch product reviews
+  const fetchProductReviews = async () => {
+    try {
+      const data = await productService.getProductReviews(id);
+      setReviews(data.data || []);
+    } catch (err) {
+      console.error('Error fetching reviews:', err);
+      setReviews([]);
+    }
+  };
+
+  // Handle review form input changes
+  const handleReviewInputChange = (e) => {
+    const { name, value } = e.target;
+    setReviewForm(prev => ({
+      ...prev,
+      [name]: name === 'rating' ? Number(value) : value
+    }));
+  };
+
+  // Handle review submission
+  const handleReviewSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!isAuthenticated) {
+      setReviewError('Please log in to submit a review');
+      return;
+    }
+
+    if (!reviewForm.title.trim() || !reviewForm.comment.trim()) {
+      setReviewError('Please fill in all fields');
+      return;
+    }
+
+    try {
+      setIsSubmittingReview(true);
+      setReviewError('');
+      
+      await productService.addReview(id, {
+        rating: reviewForm.rating,
+        title: reviewForm.title,
+        comment: reviewForm.comment
+      });
+
+      await fetchProductReviews();
+      
+      setReviewForm({
+        rating: 5,
+        title: '',
+        comment: ''
+      });
+      
+    } catch (err) {
+      console.error('Error submitting review:', err);
+      setReviewError(err.message || 'Failed to submit review');
+    } finally {
+      setIsSubmittingReview(false);
+    }
+  };
+
+ 
+
+
+  // Handle accordion change
+  const handleAccordionChange = (panel) => (event, isExpanded) => {
+    setExpanded(isExpanded ? panel : false);
+  };
+
+  // Handle back button click
+  const handleBackClick = () => {
+    navigate(-1);
+  };
+
+  // Handle add to cart
+  const handleAddToCart = () => {
+    // Add to cart functionality here
+    console.log('Added to cart:', { id, quantity, packaging });
+  };
+
+  // Fetch data on component mount
+  useEffect(() => {
+    if (id) {
+      fetchProductDetails();
+      fetchProductReviews();
+    }
+  }, [id]);
+
+  if (loading) {
+    return (
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        minHeight: '80vh' 
+      }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error || !product) {
+    return (
+      <Container maxWidth="lg" sx={{ py: 4, textAlign: 'center' }}>
+        <Alert severity="error">{error || 'Product not found'}</Alert>
+        <Button onClick={handleBackClick} sx={{ mt: 2 }}>
+          Go Back
+        </Button>
+      </Container>
+    );
+  }
+
+  return (
+    <Box sx={{ minHeight: '100vh', backgroundColor: '#f5f5f5', pt: 8 }}>
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+          <Button
+            startIcon={<ArrowBackIcon />}
+            onClick={handleBackClick}
+            sx={{ color: '#666' }}
+          >
+            Back
+          </Button>
+        </Box>
+
+        <Grid container spacing={4}>
+          {/* Product Image */}
+          <Grid item xs={12} md={6}>
+            <Box sx={{ 
+              backgroundColor: 'white', 
+              borderRadius: 2, 
+              p: 3,
+              height: '100%',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+            }}>
+              <img
+                src={product.image}
+                alt={product.name}
+                style={{ 
+                  maxWidth: '100%', 
+                  maxHeight: '400px',
+                  objectFit: 'contain'
+                }}
+              />
+            </Box>
+          </Grid>
+
+          {/* Product Details */}
+          <Grid item xs={12} md={6}>
+            <Box sx={{ 
+              backgroundColor: 'white', 
+              borderRadius: 2, 
+              p: 4,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+            }}>
+              <Typography variant="h4" component="h1" sx={{ mb: 2, fontWeight: 700 }}>
+                {product.name}
+              </Typography>
+              
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <Rating 
+                  value={product.averageRating || 0} 
+                  readOnly 
+                  precision={0.5}
+                  size="large"
+                />
+                <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
+                  ({product.numOfReviews || 0} reviews)
+                </Typography>
+              </Box>
+
+              <Typography variant="h5" color="primary" sx={{ mb: 3 }}>
+                ${product.price[0]?.price?.toFixed(2) || '0.00'}
+              </Typography>
+
+              {/* <Typography variant="body1" sx={{ mb: 3, color: '#555' }}>
+                {product.description || 'No description available.'}
+              </Typography> */}
+
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
+                  Category:
+                </Typography>
+                <Chip 
+                  label={product.category} 
+                  color="primary" 
+                  variant="outlined"
+                  sx={{ mr: 1 }}
+                />
+                <Chip 
+                  label={product.type === 'emandi' ? 'E-Mandi' : 'Regular'} 
+                  color={product.type === 'emandi' ? 'secondary' : 'default'}
+                  variant="outlined"
+                />
+              </Box>
+
+              {product.type === 'auction' && (
+                <Box sx={{ mb: 3, p: 2, bgcolor: '#f8f9fa', borderRadius: 1 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+                    Auction ends: {new Date(product.auctionEndTime).toLocaleString()}
+                  </Typography>
+                  <Typography variant="body2">
+                    Current Bid: ${product.currentBid?.toFixed(2) || '0.00'}
+                  </Typography>
+                </Box>
+              )}
+
+              
+
+              <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+               
+                <AddToCartButton 
+                  product={product}
+                />
+                {/* <Button 
+                  variant="outlined" 
+                  startIcon={<FavoriteIcon />}
+                  sx={{ flex: 1 }}
+                >
+                  Add to Wishlist
+                </Button> */}
+              </Box>
+
+            </Box>
+          </Grid>
+        </Grid>
+
+        {/* Reviews Section */}
+        <Box sx={{ mt: 6, mb: 4 }}>
+          <Typography variant="h5" sx={{ fontWeight: 600, mb: 3 }}>
+            Customer Reviews {reviews.length > 0 && `(${reviews.length})`}
+          </Typography>
+          
+          {/* Review Form */}
+          {isAuthenticated && (
+            <Card sx={{ mb: 4, p: 3, borderRadius: 2 }}>
+              <Typography variant="h6" sx={{ mb: 2 }}>Write a Review</Typography>
+              {reviewError && (
+                <Alert severity="error" sx={{ mb: 2 }}>{reviewError}</Alert>
+              )}
+              <form onSubmit={handleReviewSubmit}>
+                <Box mb={2}>
+                  <Typography component="legend">Rating</Typography>
+                  <Rating
+                    name="rating"
+                    value={reviewForm.rating}
+                    onChange={handleReviewInputChange}
+                    size="large"
+                  />
+                </Box>
+                <TextField
+                  name="title"
+                  label="Title"
+                  value={reviewForm.title}
+                  onChange={handleReviewInputChange}
+                  fullWidth
+                  margin="normal"
+                  required
+                  size="small"
+                />
+                <TextField
+                  name="comment"
+                  label="Your Review"
+                  value={reviewForm.comment}
+                  onChange={handleReviewInputChange}
+                  fullWidth
+                  multiline
+                  rows={3}
+                  margin="normal"
+                  required
+                  size="small"
+                />
+                <Button
+                  type="submit"
+                  variant="contained"
+                  color="primary"
+                  disabled={isSubmittingReview}
+                  sx={{ mt: 2 }}
+                >
+                  {isSubmittingReview ? 'Submitting...' : 'Submit Review'}
+                </Button>
+              </form>
+            </Card>
+          )}
+          
+          {/* Reviews List */}
+          {reviews.length > 0 ? (
+            reviews.map((review) => (
+              <Card key={review._id} sx={{ mb: 2, borderRadius: 2 }}>
+                <CardContent>
+                  <Box display="flex" alignItems="center" mb={1}>
+                    <Avatar 
+                      src={review.avatar} 
+                      sx={{ width: 40, height: 40, mr: 2 }}
+                    />
+                    <Box>
+                      <Typography variant="subtitle1" fontWeight={500}>
+                        {review.name}
+                      </Typography>
+                      <Box display="flex" alignItems="center">
+                        <Rating value={review.rating} readOnly size="small" />
+                        <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
+                          {new Date(review.createdAt).toLocaleDateString()}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Box>
+                  <Typography variant="h6" sx={{ mt: 1, mb: 1, fontSize: '1.1rem' }}>
+                    {review.title}
+                  </Typography>
+                  <Typography variant="body1" color="text.secondary">
+                    {review.comment}
+                  </Typography>
+                </CardContent>
+              </Card>
+            ))
+          ) : (
+            <Card sx={{ p: 3, textAlign: 'center', borderRadius: 2 }}>
+              <Typography variant="body1" color="text.secondary">
+                No reviews yet. {isAuthenticated ? 'Be the first to review this product!' : 'Log in to leave a review.'}
+              </Typography>
+            </Card>
+          )}
+        </Box>
+      </Container>
+    </Box>
+  );
+};
+
+export default ProductDetails;

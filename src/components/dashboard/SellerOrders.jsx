@@ -123,7 +123,7 @@ const SellerOrders = () => {
 
   // Initialize WebSocket connection
   useEffect(() => {
-    const apiUrl = import.meta.env.VITE_APP_API_URL || 'http://localhost:5000';
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
     const newSocket = io(apiUrl);
     setSocket(newSocket);
 

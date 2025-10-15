@@ -1,68 +1,52 @@
-// Utility functions for handling file URLs
+const BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const IS_VERCEL = import.meta.env.VITE_VERCEL === 'true';
 
-const BACKEND_URL = import.meta.env.VITE_API_URL ;
-
-// Normalize path separators and ensure proper URL formatting
+// Normalize file paths for URL compatibility
 const normalizePath = (filePath) => {
-  if (!filePath) return null;
-  
-  // Replace backslashes with forward slashes for URL compatibility
-  let normalizedPath = filePath.replace(/\\/g, '/');
-  
-  // Ensure the path starts with a forward slash
-  if (!normalizedPath.startsWith('/')) {
-    normalizedPath = '/' + normalizedPath;
-  }
-  
-  return normalizedPath;
+  if (!filePath) return '';
+  if (filePath.startsWith('http')) return filePath;
+  return filePath.replace(/^[\\/]/, '');
 };
 
-// Convert relative file path to full URL
+// Get the full URL for a file
 export const getFileUrl = (filePath) => {
-  if (!filePath) return null;
+  if (!filePath) return '';
   
   // If it's already a full URL, return as is
-  if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
+  if (filePath.startsWith('http')) {
     return filePath;
   }
-  
+
   // Normalize the path
   const normalizedPath = normalizePath(filePath);
   
-  // Add the backend URL
-  return `${BACKEND_URL}${normalizedPath}`;
+  // For Vercel, use the API route
+  if (IS_VERCEL) {
+    return `${BACKEND_URL}/api/uploads/${normalizedPath}`;
+  }
+  
+  // For local development
+  return `${BACKEND_URL}${normalizedPath.startsWith('/') ? '' : '/'}${normalizedPath}`;
 };
 
-// Get image URL for auction cards and modals
+// Get image URL
 export const getImageUrl = (imagePath) => {
   return getFileUrl(imagePath);
 };
 
-// Get document URL for viewing/downloading
+// Get document URL
 export const getDocumentUrl = (documentPath) => {
   return getFileUrl(documentPath);
 };
 
-// Check if a file path is valid
-export const isValidFilePath = (filePath) => {
-  return filePath && typeof filePath === 'string' && filePath.length > 0;
-};
-
-// Get file extension from path
-export const getFileExtension = (filePath) => {
-  if (!filePath) return '';
-  const lastDot = filePath.lastIndexOf('.');
-  return lastDot > 0 ? filePath.substring(lastDot + 1).toLowerCase() : '';
-};
-
 // Check if file is an image
 export const isImageFile = (filePath) => {
-  const ext = getFileExtension(filePath);
-  return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(ext);
+  if (!filePath) return false;
+  return /\.(jpg|jpeg|png|gif|webp)$/i.test(filePath);
 };
 
 // Check if file is a document
 export const isDocumentFile = (filePath) => {
-  const ext = getFileExtension(filePath);
-  return ['pdf', 'doc', 'docx', 'txt', 'rtf'].includes(ext);
-}; 
+  if (!filePath) return false;
+  return /\.(pdf|doc|docx)$/i.test(filePath);
+};

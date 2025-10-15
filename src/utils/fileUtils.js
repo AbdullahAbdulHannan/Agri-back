@@ -1,52 +1,54 @@
 const BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const IS_VERCEL = import.meta.env.VITE_VERCEL === 'true';
 
-// Normalize file paths for URL compatibility
-const normalizePath = (filePath) => {
-  if (!filePath) return '';
-  if (filePath.startsWith('http')) return filePath;
-  return filePath.replace(/^[\\/]/, '');
-};
-
-// Get the full URL for a file
+// Simple URL checker - returns the URL as is since Cloudinary provides full URLs
 export const getFileUrl = (filePath) => {
   if (!filePath) return '';
-  
-  // If it's already a full URL, return as is
-  if (filePath.startsWith('http')) {
-    return filePath;
-  }
-
-  // Normalize the path
-  const normalizedPath = normalizePath(filePath);
-  
-  // For Vercel, use the API route
-  if (IS_VERCEL) {
-    return `${BACKEND_URL}/api/uploads/${normalizedPath}`;
-  }
-  
-  // For local development
-  return `${BACKEND_URL}${normalizedPath.startsWith('/') ? '' : '/'}${normalizedPath}`;
+  return filePath;
 };
 
-// Get image URL
+// Get image URL - returns the URL as is
 export const getImageUrl = (imagePath) => {
-  return getFileUrl(imagePath);
+  return imagePath || '';
 };
 
-// Get document URL
+// Get document URL - returns the URL as is
 export const getDocumentUrl = (documentPath) => {
-  return getFileUrl(documentPath);
+  return documentPath || '';
 };
 
 // Check if file is an image
 export const isImageFile = (filePath) => {
   if (!filePath) return false;
-  return /\.(jpg|jpeg|png|gif|webp)$/i.test(filePath);
+  return /\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i.test(filePath);
 };
 
 // Check if file is a document
 export const isDocumentFile = (filePath) => {
   if (!filePath) return false;
-  return /\.(pdf|doc|docx)$/i.test(filePath);
+  return /\.(pdf|doc|docx)(\?.*)?$/i.test(filePath);
+};
+
+// Check if URL is from Cloudinary
+export const isCloudinaryUrl = (url) => {
+  return url && (url.includes('res.cloudinary.com') || url.startsWith('http'));
+};
+
+// Get optimized image URL with transformations
+export const getOptimizedImage = (url, width = 300, height = 200, crop = 'fill') => {
+  if (!url) return '';
+  if (!isCloudinaryUrl(url)) return url;
+  
+  // If it's already a Cloudinary URL with transformations, return as is
+  if (url.includes('/image/upload/')) {
+    return url;
+  }
+  
+  // Insert transformations into the URL
+  const parts = url.split('/upload/');
+  if (parts.length === 2) {
+    return `${parts[0]}/upload/c_${crop},w_${width},h_${height},q_auto,f_auto/${parts[1]}`;
+  }
+  
+  return url;
 };

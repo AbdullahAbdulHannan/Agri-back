@@ -24,6 +24,23 @@ export const getFileUrl = (filePath) => {
 };
 
 /**
+ * Get document URL with proper formatting
+ * @param {string} documentPath - Path to the document
+ * @returns {string} - Full URL to the document
+ */
+export const getDocumentUrl = (documentPath) => {
+  if (!documentPath) return '';
+  
+  // If it's already a full URL, return as is
+  if (documentPath.startsWith('http')) {
+    return documentPath;
+  }
+  
+  // For local files
+  return getFileUrl(documentPath);
+};
+
+/**
  * Get image URL with optional transformations
  * @param {string} imagePath - Image path or URL
  * @param {number} width - Desired width
@@ -56,6 +73,18 @@ export const isImageFile = (fileName) => {
   const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
   const ext = fileName.split('.').pop()?.toLowerCase();
   return imageExtensions.includes(`.${ext}`);
+};
+
+/**
+ * Check if a file is a document
+ * @param {string} fileName - File name or URL
+ * @returns {boolean} - True if the file is a document
+ */
+export const isDocumentFile = (fileName) => {
+  if (!fileName) return false;
+  const docExtensions = ['.pdf', '.doc', '.docx', '.txt', '.xls', '.xlsx', '.csv'];
+  const ext = fileName.split('.').pop()?.toLowerCase();
+  return docExtensions.includes(`.${ext}`);
 };
 
 /**

@@ -68,8 +68,8 @@ const AuctionDetailsModal = ({ open, onClose, auction }) => {
     if (!auction?.endTime || !auction?.startTime) return { status: 'unknown', color: 'default' };
     
     const now = new Date().getTime();
-    const startTime = new Date(auction.startTime).getTime();
-    const endTime = new Date(auction.endTime).getTime();
+    const startTime = new Date(auction.endTime).toISOString().replace('T', ' ').replace('Z', '').getTime();
+    const endTime = new Date(auction.endTime).toISOString().replace('T', ' ').replace('Z', '').getTime();
     
     if (now < startTime) {
       return { status: 'Upcoming', color: 'info' };
@@ -383,7 +383,7 @@ const AuctionDetailsModal = ({ open, onClose, auction }) => {
                       </ListItemIcon>
                       <ListItemText 
                         primary="Start Time" 
-                        secondary={new Date(auction.startTime).toLocaleString()}
+                        secondary={new Date(auction.startTime).toISOString().replace('T', ' ').replace('Z', '')}
                       />
                     </ListItem>
                     
@@ -393,7 +393,7 @@ const AuctionDetailsModal = ({ open, onClose, auction }) => {
                       </ListItemIcon>
                       <ListItemText 
                         primary="End Time" 
-                        secondary={new Date(auction.endTime).toLocaleString()}
+                        secondary={new Date(auction.endTime).toISOString().replace('T', ' ').replace('Z', '')}
                       />
                     </ListItem>
                     

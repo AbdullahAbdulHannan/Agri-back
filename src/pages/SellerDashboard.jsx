@@ -47,13 +47,14 @@ import StripeConnectButton from '../components/stripe/StripeConnectButton';
 import marketplace from '../assets/marketplace.png';
 import emandi from '../assets/emandi.png';
 import auction from '../assets/auction.png';
-
+import MenuIcon from '@mui/icons-material/Menu';
 const drawerWidth = 280;
 
 const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' })(
   ({ theme, open }) => ({
     flexGrow: 1,
     padding: theme.spacing(3),
+    marginTop: '64px', // Add space for the app bar
     transition: theme.transitions.create('margin', {
       easing: theme.transitions.easing.sharp,
       duration: theme.transitions.duration.leavingScreen,
@@ -66,6 +67,7 @@ const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' })(
       }),
       marginLeft: 0,
     }),
+    width: open ? `calc(100% - ${drawerWidth}px)` : '100%',
   }),
 );
 
@@ -85,6 +87,8 @@ const StyledDrawer = styled(Drawer)(({ theme }) => ({
     boxSizing: 'border-box',
     backgroundColor: '#f8f9fa',
     borderRight: '1px solid #e0e0e0',
+    top: '64px', // Position below app bar
+    height: 'calc(100% - 64px)', // Adjust height to account for app bar
   },
 }));
 
@@ -194,7 +198,37 @@ const SellerDashboard = () => {
   return (
     <Box sx={{ display: 'flex' }}>
       {/* Top App Bar */}
-    
+      {/* <AppBar 
+        position="fixed"
+        sx={{
+          width: '100%',
+          backgroundColor: '#fff',
+          color: '#333',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+          zIndex: theme.zIndex.drawer + 1 // Ensure app bar is above the drawer
+        }}
+      >
+        <Toolbar>
+          <IconButton
+            color="inherit"
+            aria-label="open drawer"
+            onClick={handleDrawerToggle}
+            edge="start"
+            sx={{ mr: 2, color: '#333' }}
+          >
+            <MenuIcon />
+          </IconButton>
+          <Box sx={{ flexGrow: 1 }} />
+          <IconButton color="inherit" sx={{ color: '#333' }}>
+            <Badge badgeContent={4} color="error">
+              <NotificationsIcon />
+            </Badge>
+          </IconButton>
+          <IconButton color="inherit" sx={{ ml: 1, color: '#333' }}>
+            <PersonIcon />
+          </IconButton>
+        </Toolbar>
+      </AppBar> */}
 
       {/* Sidebar */}
       <StyledDrawer

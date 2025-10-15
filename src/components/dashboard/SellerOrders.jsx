@@ -123,7 +123,7 @@ const SellerOrders = () => {
 
   // Initialize WebSocket connection
   useEffect(() => {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    const apiUrl = import.meta.env.VITE_API_URL;
     const newSocket = io(apiUrl);
     setSocket(newSocket);
 
@@ -336,11 +336,11 @@ const SellerOrders = () => {
                               </Box>
                             </Box>
                           </TableCell>
+                          <TableCell align="right">{item.quantity}</TableCell>
                           <TableCell align="right">
                             <Box>Rs.{unitPrice.toFixed(2)}</Box>
                             <Box><small>per unit</small></Box>
                           </TableCell>
-                          <TableCell align="right">{item.quantity}</TableCell>
                           <TableCell align="right">
                             <Box>Rs.{item.price.toFixed(2)}</Box>
                             {item.deliveryCharge && (

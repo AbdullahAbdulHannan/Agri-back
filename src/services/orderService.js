@@ -24,14 +24,13 @@ export const orderService = {
     });
   },
 
-  // Confirm ALL payment intents for an order
-  // expects array of paymentIntentIds
-  confirmPayment: async (orderId, paymentIntentIds) => {
+  // Confirm payment for an order (single PaymentIntent ID)
+  confirmPayment: async (orderId, paymentIntentId) => {
     return apiCall('/orders/confirm-payment', {
       method: 'POST',
       body: JSON.stringify({
         orderId,
-        paymentIntentIds,
+        paymentIntentId,
       }),
     });
   },

@@ -17,7 +17,7 @@ import {
   Close as CloseIcon
 } from '@mui/icons-material';
 import AuctionForm from './AuctionForm';
-import { auctionService } from '../services/auctionService';
+// API calls should be delegated to the parent; do not call auctionService directly here.
 
 const steps = [
   'Basic Information', 'Farm Details', 'Auction Details', 'Contact Information', 'Images & Documents'
@@ -59,17 +59,13 @@ const AuctionFormModal = ({
   const handleAuctionSubmit = async (auctionData) => {
     setIsSubmitting(true);
     setError('');
-    
     try {
-      const createdAuction = await auctionService.createAuction(auctionData);
-      
       if (onSubmit) {
-        onSubmit(createdAuction);
+        await onSubmit(auctionData);
       }
-      
       handleClose();
     } catch (err) {
-      setError(err.message || 'Failed to create auction');
+      setError(err.message || 'Failed to submit auction');
     } finally {
       setIsSubmitting(false);
     }

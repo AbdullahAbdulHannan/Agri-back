@@ -7,7 +7,7 @@ import {
   Delete, Add, Remove, ShoppingCartCheckout, ArrowBack, ShoppingCart
 } from '@mui/icons-material';
 import { Link } from 'react-router-dom';
-import { CartProvider, useCart } from '../context/CartContext';
+import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import CheckoutModal from '../components/CheckoutModal';
 
@@ -263,14 +263,12 @@ const Cart = () => {
           </Card>
         </Grid>
       </Grid>
-<CartProvider>
 
       <CheckoutModal
         open={checkoutOpen}
         onClose={() => setCheckoutOpen(false)}
         onSuccess={handleCheckoutSuccess}
-        />
-        </CartProvider>
+      />
     </Box>
   );
 };

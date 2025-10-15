@@ -195,6 +195,15 @@ const AuctionDashboard = () => {
   };
 
   const handleFormSubmit = (auctionData) => {
+    // If modal already called the API and passed back the API response, don't submit again
+    if (auctionData && (auctionData.success === true || auctionData.data)) {
+      setSnackbar({ open: true, message: formMode === 'create' ? 'Auction created successfully!' : 'Auction updated successfully!', severity: 'success' });
+      setShowFormModal(false);
+      setSelectedAuction(null);
+      fetchAuctions();
+      return Promise.resolve();
+    }
+
     if (formMode === 'create') {
       return handleCreateAuction(auctionData);
     } else {

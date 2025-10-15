@@ -172,22 +172,35 @@ const Header = () => {
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, [scrolled]);
+  const fetchNotifications = useCallback(async () => {
+     try {
+       setNotifLoading(true);
+       const data = await notificationService.fetchNotifications();
+       setNotifications(Array.isArray(data) ? data : (data.notifications || []));
+ 
+       // Update unread count
+       const unread = data.filter(n => !n.isRead).length;
+       setUnreadCount(unread);
+     } catch (err) {
+       console.error('Failed to fetch notifications', err);
+     } finally {
+       setNotifLoading(false);
+     }
+   }, []);
 
-   const fetchNotifications = useCallback(async () => {
-      try {
-        setNotifLoading(true);
-        const data = await notificationService.fetchNotifications();
-        setNotifications(Array.isArray(data) ? data : (data.notifications || []));
-  
-        // Update unread count
-        const unread = data.filter(n => !n.isRead).length;
-        setUnreadCount(unread);
-      } catch (err) {
-        console.error('Failed to fetch notifications', err);
-      } finally {
-        setNotifLoading(false);
-      }
-    }, []);
+  // Fetch notifications and set up polling when authenticated
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setNotifications([]);
+      setUnreadCount(0);
+      return;
+    }
+    // initial fetch after auth
+    fetchNotifications();
+    const intervalId = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(intervalId);
+  }, [isAuthenticated, fetchNotifications]);
+
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -204,8 +217,13 @@ const handleNotificationClick = () => {
     const handleDeleteNotification = async (notificationId) => {
       try {
         await notificationService.deleteNotification(notificationId);
-        setNotifications(prev => prev.filter(n => n._id !== notificationId));
-        setUnreadCount(prev => Math.max(0, prev - 1));
+        setNotifications(prev => {
+          const target = prev.find(n => n._id === notificationId);
+          const wasUnread = target ? !target.isRead : false;
+          const next = prev.filter(n => n._id !== notificationId);
+          if (wasUnread) setUnreadCount(p => Math.max(0, p - 1));
+          return next;
+        });
       } catch (error) {
         console.error('Failed to delete notification', error);
       }
@@ -306,7 +324,27 @@ const handleNotificationClick = () => {
             <ListItemText primary={item.label} />
           </ListItem>
         ))}
-        
+        {!isAuthenticated && (
+          <>
+           <Divider sx={{ my: 1 }} />
+          <Button 
+            color="inherit" 
+            component={Link} 
+            to="/signin"
+            sx={{ mr: 1 }}
+          >
+            Sign In
+          </Button>
+          <Button 
+            variant="contained" 
+            color="primary"
+            component={Link}
+            to="/signup"
+          >
+            Sign Up
+          </Button>
+        </>
+        )}
         {isAuthenticated && (
           <>
             <Divider sx={{ my: 1 }} />

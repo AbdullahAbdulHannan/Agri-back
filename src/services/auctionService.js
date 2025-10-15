@@ -109,12 +109,19 @@ export const auctionService = {
     try {
       const formData = new FormData();
       
-      // Add all text fields
+      // Add scalar text fields; handle arrays explicitly below
       Object.keys(updateData).forEach(key => {
-        if (key !== 'images' && key !== 'documents') {
-          formData.append(key, updateData[key]);
-        }
+        if (key === 'images' || key === 'documents' || key === 'existingImages' || key === 'existingDocuments') return;
+        formData.append(key, updateData[key]);
       });
+
+      // Preserve existing images/documents by sending repeated fields
+      if (Array.isArray(updateData.existingImages)) {
+        updateData.existingImages.forEach((img) => formData.append('existingImages', img));
+      }
+      if (Array.isArray(updateData.existingDocuments)) {
+        updateData.existingDocuments.forEach((doc) => formData.append('existingDocuments', doc));
+      }
       
       // Add new images
       if (updateData.images && updateData.images.length > 0) {

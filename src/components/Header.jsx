@@ -203,17 +203,22 @@ const Header = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [lastScrollY]);
 
-  // Fetch notifications on mount and set up polling
+  // Fetch notifications and set up polling when authenticated
   useEffect(() => {
-    // Initial fetch
+    if (!isAuthenticated) {
+      // Reset counts when logged out
+      setNotifications([]);
+      setUnreadCount(0);
+      return;
+    }
+
+    // Initial fetch right after auth is ready
     fetchNotifications();
 
-    // Set up polling every 30 seconds
+    // Poll every 30s while authenticated
     const intervalId = setInterval(fetchNotifications, 30000);
-
-    // Clean up interval on unmount
     return () => clearInterval(intervalId);
-  }, [fetchNotifications]);
+  }, [isAuthenticated, fetchNotifications]);
 
   return (
     <>

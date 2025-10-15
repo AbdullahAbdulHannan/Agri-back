@@ -80,7 +80,7 @@ const SignUp = () => {
       address
     })
     .then(res=>{
-      alert('Sign up successful!');
+      alert('Sign up successful! We have sent a link to verify your email.Verify it to continue.');
       navigate('/signin');
     })
     .catch(err => {

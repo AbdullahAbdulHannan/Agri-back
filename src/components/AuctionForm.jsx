@@ -10,6 +10,19 @@ import {
 } from '@mui/icons-material';
 import { getImageUrl, getDocumentUrl } from '../utils/fileUtils';
 
+// Helper to format a date into input[type=datetime-local] value in local timezone
+function formatLocalDatetimeInput(dateLike) {
+  const d = new Date(dateLike);
+  if (isNaN(d.getTime())) return '';
+  const pad = (n) => String(n).padStart(2, '0');
+  const yyyy = d.getFullYear();
+  const mm = pad(d.getMonth() + 1);
+  const dd = pad(d.getDate());
+  const hh = pad(d.getHours());
+  const mi = pad(d.getMinutes());
+  return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+}
+
 const AuctionForm = ({ 
   mode = 'create', // 'create' or 'edit'
   auction = null, 
@@ -66,8 +79,8 @@ const AuctionForm = ({
         startingBid: auction.startingBid || '',
         bidIncrement: auction.bidIncrement || '',
         reservePrice: auction.reservePrice || '',
-        startTime: auction.startTime ? auction.startTime.slice(0, 16) : '',
-        endTime: auction.endTime ? auction.endTime.slice(0, 16) : '',
+        startTime: auction.startTime ? formatLocalDatetimeInput(auction.startTime) : '',
+        endTime: auction.endTime ? formatLocalDatetimeInput(auction.endTime) : '',
         leaseDuration: auction.leaseDuration || '',
         paymentTerms: auction.paymentTerms || '',
         securityDeposit: auction.securityDeposit || ''

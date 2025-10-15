@@ -153,11 +153,20 @@ const CheckoutForm = ({ onSuccess, onError, orderData }) => {
         throw new Error(`Payment failed with status: ${failedPayment.status}`);
       }
 
+      // 3. Notify backend to confirm payment and update order state
+      try {
+        const firstIntentId = confirmedIntents[0]?.id;
+        await orderService.confirmPayment(orderData.order._id, firstIntentId);
+      } catch (beErr) {
+        throw new Error(beErr.message || 'Failed to finalize order after payment.');
+      }
+
       // Call the success handler with the first payment intent
       onSuccess && onSuccess({ 
         status: 'succeeded',
         paymentIntent: confirmedIntents[0] 
       });
+      setProcessing(false);
       
     } catch (err) {
       setError(err.message || 'Payment failed. Please try again.');

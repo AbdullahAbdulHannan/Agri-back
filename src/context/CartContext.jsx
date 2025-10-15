@@ -46,7 +46,7 @@ const cartReducer = (state, action) => {
       return {
         ...state,
         items: [],
-        summary: { itemCount: 0, totalItems: 0, totalPrice: 0 },
+        summary: { itemCount: 0, totalItems: 0, totalPrice: 0, deliveryCharges: 0, grandTotal: 0 },
         loading: false,
         error: null
       };
@@ -78,7 +78,7 @@ const cartReducer = (state, action) => {
 // Initial state
 const initialState = {
   items: [],
-  summary: { itemCount: 0, totalItems: 0, totalPrice: 0 },
+  summary: { itemCount: 0, totalItems: 0, totalPrice: 0, deliveryCharges: 0, grandTotal: 0 },
   loading: false,
   error: null,
   itemLoadingStates: {}
@@ -182,13 +182,17 @@ export const CartProvider = ({ children }) => {
     }
   };
 
-  // Clear cart
+  // Clear cart (optimistic)
   const clearCart = async () => {
+    // Optimistically clear UI immediately
+    dispatch({ type: 'CLEAR_CART' });
     try {
-      dispatch({ type: 'SET_LOADING' });
       await cartService.clearCart();
-      dispatch({ type: 'CLEAR_CART' });
+      // Also refresh summary to ensure all subscribers update consistently
+      await loadCartSummary();
     } catch (error) {
+      // If API fails, reload cart to recover and surface error
+      await loadCart();
       dispatch({ type: 'SET_ERROR', payload: error.message });
       throw error;
     }

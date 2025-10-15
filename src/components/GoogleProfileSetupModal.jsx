@@ -77,6 +77,7 @@ const GoogleProfileSetupModal = ({ open, onClose, googleUserData, onComplete }) 
       onClose();
     } catch (error) {
       setError(error.message || 'Failed to update profile');
+      console.log( error);
     } finally {
       setLoading(false);
     }

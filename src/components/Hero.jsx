@@ -8,12 +8,13 @@ import {
   useMediaQuery
 } from '@mui/material';
 import heroImage from '../assets/hero.jpg';
-
+import { Link } from 'react-router-dom';
+import { useAuth } from '../context';
 
 const Hero = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-
+  const { isAuthenticated } = useAuth();
   return (
     <>
       {/* Hero Section */}
@@ -97,6 +98,8 @@ const Hero = () => {
           </Typography>
 
           <Box sx={{ display: 'flex', gap: 3, justifyContent: 'center', flexWrap: 'wrap' }}>
+          <Link to='/signin'>
+          {!isAuthenticated ? 
             <Button
               variant="contained"
               size="large"
@@ -119,9 +122,17 @@ const Hero = () => {
               Let's Start
             </Button>
             
+            :''}
+            </Link>
             <Button
               variant="outlined"
               size="large"
+              onClick={() => {
+    const element = document.getElementById('core-modules');
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  }}
               sx={{
                 color: '#4CAF50',
                 px: 4,

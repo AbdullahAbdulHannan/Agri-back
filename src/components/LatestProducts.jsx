@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Container,
@@ -8,33 +8,54 @@ import {
   CardContent,
   CardMedia,
   useTheme,
-  useMediaQuery
+  useMediaQuery,
+  CircularProgress
 } from '@mui/material';
-import anar from '../assets/anar.jpg';
+import { productService } from '../services/productService';
+
 const LatestProducts = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const products = [
-    {
-      name: 'Orange',
-      price: 'Rs 250/Kg',
-      image:'https://images.unsplash.com/photo-1547514701-42782101795e?w=400&h=300&fit=crop&crop=center',
-      bgColor: '#e3f2fd'
-    },
-    {
-      name: 'Pomegranate',
-      price: 'Rs 800/Kg',
-      image: anar,
-      bgColor: '#fafafa'
-    },
-    {
-      name: 'Strawberry',
-      price: 'Rs 350/Kg',
-      image: 'https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=400&h=300&fit=crop&crop=center',
-      bgColor: '#f1f8e9'
+  const fetchLatestProducts = async () => {
+    try {
+      setLoading(true);
+      const data = await productService.getProductsByType('emandi');
+      // Sort by creation date and get the 3 most recent products
+      const sortedProducts = data
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+        .slice(0, 3);
+      setProducts(sortedProducts);
+    } catch (err) {
+      console.error('Error fetching latest products:', err);
+      setError('Failed to load latest products. Please try again later.');
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  useEffect(() => {
+    fetchLatestProducts();
+  }, []);
+
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box sx={{ py: 8, textAlign: 'center' }}>
+        <Typography color="error">{error}</Typography>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ py: 8, backgroundColor: '#fafafa' }}>
@@ -102,7 +123,7 @@ const LatestProducts = () => {
                       fontSize: { xs: '1rem', md: '1.25rem' }
                     }}
                   >
-                    {product.price}
+                    Rs.{product.price?.[0]?.price || 'N/A'} / {product.price?.[0]?.unit || 'kg'}
                   </Typography>
                 </CardContent>
               </Card>

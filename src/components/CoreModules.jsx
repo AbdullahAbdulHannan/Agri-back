@@ -36,7 +36,7 @@ const CoreModules = () => {
   ];
 
   return (
-    <Box sx={{ py: 8, backgroundColor: '#ffffff' }}>
+    <Box id='core-modules' sx={{ py: 8, backgroundColor: '#ffffff' }}>
       <Container maxWidth="lg">
         <Typography
           variant="h3"

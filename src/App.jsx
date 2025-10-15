@@ -17,6 +17,7 @@ import Cart from "./pages/Cart";
 import Auction from "./pages/Auction";
 import { GOOGLE_CLIENT_ID } from '../config';
 import VerifyEmail from "./pages/VerifyEmail";
+import ScrollRestore from "./components/ScrollRestore";
 
 const App = () => {
   return (
@@ -24,6 +25,7 @@ const App = () => {
       <AuthProvider>
         <CartProvider>
           <Router>
+            <ScrollRestore />
             <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
               <Header />
               <main style={{ flex: 1 }}>

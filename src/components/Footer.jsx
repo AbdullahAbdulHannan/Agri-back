@@ -265,7 +265,7 @@ const Footer = () => {
               fontSize: '0.85rem'
             }}
           >
-            © 2024 AgriBazaar. All rights reserved.
+            © {new Date().getFullYear()} AgriBazaar. All rights reserved.
           </Typography>
         </Box>
       </Container>

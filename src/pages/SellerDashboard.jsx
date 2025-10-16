@@ -197,38 +197,6 @@ const SellerDashboard = () => {
 
   return (
     <Box sx={{ display: 'flex' }}>
-      {/* Top App Bar */}
-      {/* <AppBar 
-        position="fixed"
-        sx={{
-          width: '100%',
-          backgroundColor: '#fff',
-          color: '#333',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-          zIndex: theme.zIndex.drawer + 1 // Ensure app bar is above the drawer
-        }}
-      >
-        <Toolbar>
-          <IconButton
-            color="inherit"
-            aria-label="open drawer"
-            onClick={handleDrawerToggle}
-            edge="start"
-            sx={{ mr: 2, color: '#333' }}
-          >
-            <MenuIcon />
-          </IconButton>
-          <Box sx={{ flexGrow: 1 }} />
-          <IconButton color="inherit" sx={{ color: '#333' }}>
-            <Badge badgeContent={4} color="error">
-              <NotificationsIcon />
-            </Badge>
-          </IconButton>
-          <IconButton color="inherit" sx={{ ml: 1, color: '#333' }}>
-            <PersonIcon />
-          </IconButton>
-        </Toolbar>
-      </AppBar> */}
 
       {/* Sidebar */}
       <StyledDrawer
@@ -245,9 +213,9 @@ const SellerDashboard = () => {
         <Box sx={{ p: 2 }}>
           {/* User Profile Section */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-            <Avatar sx={{ bgcolor: '#4CAF50' }}>
+            {/* <Avatar sx={{ bgcolor: '#4CAF50' }}>
               <PersonIcon />
-            </Avatar>
+            </Avatar> */}
             <Box>
               <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
                 {user?.name || 'ByeWind'}

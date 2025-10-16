@@ -21,6 +21,8 @@
     "antd": "^5.26.7",
     "axios": "^1.11.0",
     "date-fns": "^4.1.0",
+    "lodash": "^4.17.21",
+    "lodash.debounce": "^4.0.8",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router-dom": "^7.7.1",

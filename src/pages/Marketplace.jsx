@@ -58,7 +58,15 @@ const Marketplace = () => {
   // Apply filters and sort to products
   const applyFiltersAndSort = (productsToFilter, currentPriceRange, currentSort) => {
     let filtered = [...productsToFilter];
-    
+    // Apply search filter
+if (searchValue) {
+  const searchLower = searchValue.toLowerCase();
+  filtered = filtered.filter(product => 
+    product.name.toLowerCase().includes(searchLower) ||
+    (product.description && product.description.toLowerCase().includes(searchLower)) ||
+    (product.category && product.category.toLowerCase().includes(searchLower))
+  );
+}
     // Apply price range filter only if user has interacted with it
     if (isPriceFilterActive) {
       filtered = filtered.filter(product => {
@@ -98,7 +106,7 @@ const Marketplace = () => {
     if (products.length > 0) {
       applyFiltersAndSort(products, priceRange, selectedSort);
     }
-  }, [priceRange, selectedSort, isPriceFilterActive]);
+  }, [priceRange, selectedSort, isPriceFilterActive,searchValue]);
 
   // Handler functions
   const handlePriceRangeChange = (event, newValue) => {

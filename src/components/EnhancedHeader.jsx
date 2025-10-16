@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import {
   AppBar,
@@ -25,6 +25,11 @@ import {
   MenuItem,
   Tooltip,
   ListItemIcon,
+  Paper,
+  ListItemButton,
+  Chip,
+  CircularProgress,
+  Fade,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -40,8 +45,10 @@ import {
   ExitToApp as ExitToAppIcon,
   AccountCircle as AccountCircleIcon,
   GridView,
+  Clear as ClearIcon,
 } from '@mui/icons-material';
-// import { styled } from '@mui/material/styles';
+import { debounce } from 'lodash';
+import axios from 'axios';
 import logo from '../assets/logo.png';
 import { useAuth } from '../context';
 import CartIcon from './CartIcon';
@@ -52,6 +59,9 @@ import ChatButton from './ChatButton';
 import NotificationDrawer from './NotificationDrawer';
 import { notificationService } from '../services/notificationService';
 import Chatbot from './Chatbot';
+
+// API endpoints
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 // Styled Components
 const StyledAppBar = styled(AppBar)(({ theme }) => ({
@@ -66,7 +76,7 @@ const StyledAppBar = styled(AppBar)(({ theme }) => ({
 
 const Search = styled('div')(({ theme }) => ({
   position: 'relative',
-  borderRadius: theme.shape.borderRadius,
+  borderRadius: '24px',
   backgroundColor: alpha(theme.palette.common.black, 0.05),
   '&:hover': {
     backgroundColor: alpha(theme.palette.common.black, 0.08),
@@ -79,7 +89,12 @@ const Search = styled('div')(({ theme }) => ({
     width: 'auto',
   },
   [theme.breakpoints.up('md')]: {
-    width: '300px',
+    width: '400px',
+  },
+  transition: 'all 0.3s ease',
+  '&:focus-within': {
+    boxShadow: `0 0 0 2px ${theme.palette.primary.main}40`,
+    backgroundColor: theme.palette.background.paper,
   },
 }));
 
@@ -91,22 +106,90 @@ const SearchIconWrapper = styled('div')(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
+  color: theme.palette.text.secondary,
 }));
 
 const StyledInputBase = styled(InputBase)(({ theme }) => ({
   color: 'inherit',
+  width: '100%',
   '& .MuiInputBase-input': {
-    padding: theme.spacing(1, 1, 1, 0),
+    padding: theme.spacing(1.2, 1, 1.2, 0),
     paddingLeft: `calc(1em + ${theme.spacing(4)})`,
+    paddingRight: theme.spacing(5),
     transition: theme.transitions.create('width'),
     width: '100%',
     [theme.breakpoints.up('md')]: {
-      width: '20ch',
-      '&:focus': {
-        width: '25ch',
-      },
+      width: '100%',
     },
   },
+}));
+
+const SearchResults = styled(Paper)(({ theme }) => ({
+  position: 'absolute',
+  top: '100%',
+  left: 0,
+  right: 0,
+  zIndex: 1300,
+  marginTop: theme.spacing(1),
+  maxHeight: '400px',
+  overflowY: 'auto',
+  boxShadow: theme.shadows[4],
+  borderRadius: '12px',
+  '&::-webkit-scrollbar': {
+    width: '6px',
+  },
+  '&::-webkit-scrollbar-track': {
+    background: theme.palette.grey[100],
+    borderRadius: '0 12px 12px 0',
+  },
+  '&::-webkit-scrollbar-thumb': {
+    background: theme.palette.grey[400],
+    borderRadius: '3px',
+  },
+  '&::-webkit-scrollbar-thumb:hover': {
+    background: theme.palette.grey[500],
+  },
+}));
+
+const SearchResultItem = styled(ListItemButton)(({ theme }) => ({
+  padding: theme.spacing(1.5, 2),
+  '&:hover': {
+    backgroundColor: theme.palette.action.hover,
+  },
+  '&.Mui-focusVisible': {
+    backgroundColor: theme.palette.action.selected,
+  },
+}));
+
+const CategoryChip = styled(Chip)(({ theme, source }) => ({
+  marginLeft: 'auto',
+  fontSize: '0.65rem',
+  height: '20px',
+  backgroundColor: 
+    source === 'eMandi' 
+      ? theme.palette.primary.light 
+      : source === 'Marketplace' 
+        ? theme.palette.secondary.light 
+        : theme.palette.warning.light,
+  color: theme.palette.getContrastText(
+    source === 'eMandi' 
+      ? theme.palette.primary.light 
+      : source === 'Marketplace' 
+        ? theme.palette.secondary.light 
+        : theme.palette.warning.light
+  ),
+}));
+
+const NoResults = styled(Box)(({ theme }) => ({
+  padding: theme.spacing(2),
+  textAlign: 'center',
+  color: theme.palette.text.secondary,
+}));
+
+const LoadingContainer = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  justifyContent: 'center',
+  padding: theme.spacing(2),
 }));
 
 const NavButton = styled(Button)(({ theme }) => ({
@@ -135,6 +218,7 @@ const Header = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
   const location = useLocation();
+  const searchRef = useRef(null);
   
   // State
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -148,9 +232,176 @@ const Header = () => {
   const [notifications, setNotifications] = useState([]);
   const [notifLoading, setNotifLoading] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-   const [selectedProductType, setSelectedProductType] = useState('marketplace');
+  const [selectedProductType, setSelectedProductType] = useState('marketplace');
   const { isAuthenticated, userRole, user, logout } = useAuth();
   
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState({
+    eMandi: [],
+    marketplace: [],
+    auction: [],
+  });
+  const [isSearching, setIsSearching] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
+  
+  // Debounced search function
+  const debouncedSearch = useCallback(
+    debounce(async (query) => {
+      const searchQuery = query.trim();
+      
+      if (!searchQuery) {
+        setSearchResults({ eMandi: [], marketplace: [], auction: [] });
+        setIsSearching(false);
+        setShowResults(false);
+        return;
+      }
+
+      setIsSearching(true);
+      setShowResults(true);
+
+      try {
+        console.log('Searching for:', searchQuery);
+        
+        // Only fetch products, no auctions
+        const productsRes = await axios.get(`${API_BASE_URL}/api/products`).catch(err => {
+          console.error('Products API error:', err);
+          return { data: { data: [] } };
+        });
+
+        console.log('Products response:', productsRes.data);
+
+        const queryLower = searchQuery.toLowerCase();
+        
+        // Handle different possible response structures
+        const allProducts = Array.isArray(productsRes.data?.data) ? 
+          productsRes.data.data : 
+          Array.isArray(productsRes.data) ? productsRes.data : [];
+
+        console.log('All products:', allProducts);
+
+        const filterByQuery = (items) => {
+          return items.filter(item => {
+            if (!item) return false;
+            return (
+              (item.name && item.name.toLowerCase().includes(queryLower)) ||
+              (item.description && item.description.toLowerCase().includes(queryLower)) ||
+              (item.category && item.category.toLowerCase().includes(queryLower))
+            );
+          });
+        };
+
+        const filteredProducts = filterByQuery(allProducts);
+        console.log('Filtered products:', filteredProducts);
+
+        // Separate products by type
+        const eMandiProducts = filteredProducts.filter(p => 
+          (p.type && p.type.toLowerCase() === 'emandi') || 
+          (p.productType && p.productType.toLowerCase() === 'emandi')
+        );
+        
+        const marketplaceProducts = filteredProducts.filter(p => 
+          (p.type && p.type.toLowerCase() === 'marketplace') || 
+          (p.productType && p.productType.toLowerCase() === 'marketplace') ||
+          (!p.type && !p.productType) // Default to marketplace if no type specified
+        );
+
+        console.log('eMandi products:', eMandiProducts);
+        console.log('Marketplace products:', marketplaceProducts);
+
+        const results = {
+          eMandi: eMandiProducts,
+          marketplace: marketplaceProducts,
+          auction: [], // Empty array for auctions to maintain consistent structure
+        };
+
+        console.log('Final search results:', results);
+        setSearchResults(results);
+
+      } catch (error) {
+        console.error('Search error:', error);
+        setSearchResults({ eMandi: [], marketplace: [], auction: [] });
+      } finally {
+        setIsSearching(false);
+        setHasSearched(true);
+      }
+    }, 500),
+    []
+  );
+
+  // Handle search input change
+  const handleSearchChange = (event) => {
+    const query = event.target.value;
+    setSearchQuery(query);
+    
+    if (query.trim()) {
+      debouncedSearch(query);
+    } else {
+      setSearchResults({ eMandi: [], marketplace: [], auction: [] });
+      setShowResults(false);
+      setHasSearched(false);
+    }
+  };
+
+  // Clear search
+  const clearSearch = () => {
+    setSearchQuery('');
+    setSearchResults({ eMandi: [], marketplace: [], auction: [] });
+    setShowResults(false);
+    setHasSearched(false);
+  };
+
+  // Handle search result click
+  const handleResultClick = (item, type) => {
+    if (type === 'auction') {
+      // Navigate to auction details page
+      navigate(`/auctions/${item._id || item.id}`);
+    } else if (type === 'eMandi') {
+      // Navigate to eMandi product details
+      navigate(`/product/${item._id || item.id}`);
+    } else {
+      // Navigate to marketplace product details
+      navigate(`/product/${item._id || item.id}`);
+    }
+    // Close search results and clear search
+    setShowResults(false);
+    setSearchQuery('');
+    setSearchResults({ eMandi: [], marketplace: [], auction: [] });
+  };
+
+  // Handle search submit
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+    
+    // Find the first available result
+    const firstResult = 
+      searchResults.eMandi[0] || 
+      searchResults.marketplace[0] || 
+      searchResults.auction[0];
+    
+    if (firstResult) {
+      const type = searchResults.eMandi[0] ? 'eMandi' : 
+                  searchResults.marketplace[0] ? 'marketplace' : 'auction';
+      handleResultClick(firstResult, type);
+    }
+  };
+
+  // Close search results when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (searchRef.current && !searchRef.current.contains(event.target)) {
+        setShowResults(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   // Navigation items
   const navItems = [
     { label: 'Home', href: '/', icon: <HomeIcon /> },
@@ -159,6 +410,125 @@ const Header = () => {
     { label: 'Auctions', href: '/auctions', icon: <GavelIcon /> },
     ...(userRole === 'buyer' ? [{ label: 'My Orders', href: '/my-orders', icon: <ShoppingCartIcon /> }] : []),
   ];
+
+  // Check if there are any search results
+  const hasResults = searchResults.eMandi.length > 0 || 
+                   searchResults.marketplace.length > 0;
+
+  // Render search results
+  const renderSearchResults = () => {
+    if (!showResults || !searchQuery.trim()) return null;
+
+    // Check if we have any results
+    const hasEMandiResults = searchResults.eMandi && searchResults.eMandi.length > 0;
+    const hasMarketplaceResults = searchResults.marketplace && searchResults.marketplace.length > 0;
+    const hasAnyResults = hasEMandiResults || hasMarketplaceResults;
+
+    return (
+      <SearchResults elevation={3}>
+        {isSearching ? (
+          <LoadingContainer>
+            <CircularProgress size={24} />
+          </LoadingContainer>
+        ) : hasAnyResults ? (
+          <>
+            {hasEMandiResults && (
+              <>
+                <ListItem>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    eMandi Products
+                  </Typography>
+                </ListItem>
+                {searchResults.eMandi.map((item) => {
+                  const isEMandi = (item.type && item.type.toLowerCase() === 'emandi') || 
+                                 (item.productType && item.productType.toLowerCase() === 'emandi');
+                  const label = isEMandi ? 'eMandi' : 'Marketplace';
+                  
+                  return (
+                    <SearchResultItem 
+                      key={`${isEMandi ? 'emandi' : 'marketplace'}-${item._id}`}
+                      onClick={() => handleResultClick(item, isEMandi ? 'eMandi' : 'marketplace')}
+                    >
+                      <ListItemText 
+                        primary={item.name || item.title}
+                        secondary={item.description && item.description.substring(0, 60) + (item.description.length > 60 ? '...' : '')}
+                        primaryTypographyProps={{
+                          noWrap: true,
+                          fontWeight: 500,
+                        }}
+                        secondaryTypographyProps={{
+                          variant: 'caption',
+                          noWrap: true,
+                        }}
+                      />
+                      <CategoryChip 
+                        label={label}
+                        size="small"
+                        source={label}
+                        style={{
+                          backgroundColor: isEMandi ? '#4caf50' : '#2196f3',
+                          color: 'white',
+                        }}
+                      />
+                    </SearchResultItem>
+                  );
+                })}
+              </>
+            )}
+
+            {hasMarketplaceResults && (
+              <>
+                <ListItem>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Marketplace Products
+                  </Typography>
+                </ListItem>
+                {searchResults.marketplace.map((item) => {
+                  const isEMandi = (item.type && item.type.toLowerCase() === 'emandi') || 
+                                 (item.productType && item.productType.toLowerCase() === 'emandi');
+                  const label = isEMandi ? 'eMandi' : 'Marketplace';
+                  
+                  return (
+                    <SearchResultItem 
+                      key={`marketplace-${item._id}`}
+                      onClick={() => handleResultClick(item, 'marketplace')}
+                    >
+                      <ListItemText 
+                        primary={item.name || item.title}
+                        
+                        primaryTypographyProps={{
+                          noWrap: true,
+                          fontWeight: 500,
+                        }}
+                        secondaryTypographyProps={{
+                          variant: 'caption',
+                          noWrap: true,
+                        }}
+                      />
+                      <CategoryChip 
+                        label={label}
+                        size="small"
+                        source={label}
+                        style={{
+                          backgroundColor: isEMandi ? '#4caf50' : '#2196f3',
+                          color: 'white',
+                        }}
+                      />
+                    </SearchResultItem>
+                  );
+                })}
+              </>
+            )}
+           
+          </>
+        ) : hasSearched ? (
+          <NoResults>
+            <Typography variant="body2">No items found</Typography>
+          </NoResults>
+        ) : null}
+      </SearchResults>
+    );
+  };
 
   // Handle scroll effect
   useEffect(() => {
@@ -577,15 +947,41 @@ const handleNotificationClick = () => {
 
 
             {renderDesktopMenu}
-            <Search>
-              <SearchIconWrapper>
-                <SearchIcon />
-              </SearchIconWrapper>
-              <StyledInputBase
-                placeholder="Search products..."
-                inputProps={{ 'aria-label': 'search' }}
-              />
-            </Search>
+            <Box sx={{ position: 'relative', flexGrow: 1, maxWidth: '600px' }} ref={searchRef}>
+              <Search>
+                <SearchIconWrapper>
+                  <SearchIcon />
+                </SearchIconWrapper>
+                <form onSubmit={handleSearchSubmit}>
+                  <StyledInputBase
+                    placeholder="Search products "
+                    inputProps={{ 'aria-label': 'search' }}
+                    value={searchQuery}
+                    onChange={handleSearchChange}
+                    onFocus={() => searchQuery.trim() && setShowResults(true)}
+                  />
+                </form>
+                {searchQuery && (
+                  <IconButton
+                    size="small"
+                    onClick={clearSearch}
+                    sx={{
+                      position: 'absolute',
+                      right: 8,
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      color: 'text.secondary',
+                      '&:hover': {
+                        color: 'text.primary',
+                      },
+                    }}
+                  >
+                    <ClearIcon fontSize="small" />
+                  </IconButton>
+                )}
+              </Search>
+              {renderSearchResults()}
+            </Box>
 
             <Box sx={{ flexGrow: 1 }} />
 

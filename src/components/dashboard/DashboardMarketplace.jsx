@@ -40,7 +40,7 @@ const DashboardMarketplace = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-
+const [filteredProducts, setFilteredProducts] = useState([]);
   const handleDelete = async (productId) => {
     if (window.confirm('Are you sure you want to delete this product?')) {
       try {
@@ -88,6 +88,7 @@ const DashboardMarketplace = () => {
       setLoading(true);
       const data = await productService.getProducts({ type: 'marketplace', seller: user.id || user._id });
       setProducts(data);
+      setFilteredProducts(data);
     } catch (err) {
       setError(err.message);
       console.error('Error fetching products:', err);
@@ -100,7 +101,18 @@ const DashboardMarketplace = () => {
   useEffect(() => {
     fetchProducts();
   }, []);
-
+useEffect(() => {
+  if (searchQuery.trim() === '') {
+    setFilteredProducts(products);
+  } else {
+    const filtered = products.filter(product => 
+      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (product.description && product.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (product.category && product.category.toLowerCase().includes(searchQuery.toLowerCase()))
+    );
+    setFilteredProducts(filtered);
+  }
+}, [searchQuery, products]);
   return (
     <Box>
       {/* Header */}
@@ -192,7 +204,7 @@ const DashboardMarketplace = () => {
         </Box>
       ) : (
         <Grid container spacing={3}>
-          {products.map((product) => (
+          {filteredProducts.map((product) => (
             <Grid item xs={12} sm={6} md={4} key={product._id}>
               <Card sx={{ 
                 height: '100%',
